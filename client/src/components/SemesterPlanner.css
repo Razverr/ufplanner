@@ -1,0 +1,322 @@
+/* Zachary Allarey Code Section */
+/* semester planner styles, uses the shared colors from index.css */
+
+.planner-panel {
+  width: 100%;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.planner-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.planner-heading h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.planner-summary {
+  color: var(--muted-text);
+  font-size: 0.82rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.planner-instructions {
+  margin: 14px 0 16px;
+  color: var(--muted-text);
+  font-size: 0.88rem;
+}
+
+/* completed coursework dropdown */
+.planner-completed {
+  margin-bottom: 14px;
+  border: 1px solid var(--soft-border);
+  border-radius: 11px;
+  background: #f8f9fc;
+}
+
+.planner-completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 11px;
+  color: var(--navy);
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.planner-completed-toggle:focus-visible {
+  outline: 3px solid rgba(250, 70, 22, 0.3);
+  outline-offset: 2px;
+}
+
+.planner-completed-count {
+  margin-left: auto;
+  color: var(--muted-text);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.planner-completed-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+
+.planner-completed-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+/* semester cards */
+.planner-semesters {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-semester {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  transition: border-color 150ms, background 150ms;
+}
+
+/* highlight when dragging a course over a semester */
+.planner-semester.drag-over {
+  border-color: var(--blue);
+  background: #eef3ff;
+}
+
+.planner-semester-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.planner-semester-heading h3 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.planner-semester-credits {
+  color: var(--muted-text);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planner-semester-credits.warn {
+  color: #8a361e;
+}
+
+.planner-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* planned course rows */
+.planner-courses {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-course {
+  padding: 10px 12px;
+  border: 1px solid var(--soft-border);
+  border-left: 3px solid var(--light-blue);
+  border-radius: 10px;
+  background: #fbfcfe;
+  cursor: grab;
+}
+
+.planner-course:active {
+  cursor: grabbing;
+}
+
+/* orange edge when a prereq is missing */
+.planner-course.has-issue {
+  border-left-color: var(--orange);
+  background: #fff8f4;
+}
+
+.planner-course-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.planner-course-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.planner-code {
+  color: var(--orange);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.planner-title {
+  color: var(--navy);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.planner-course-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.planner-credits {
+  color: var(--muted-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planner-course-actions select {
+  max-width: 110px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.planner-remove {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--muted-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.planner-remove:hover {
+  border-color: var(--border);
+  color: var(--orange);
+}
+
+/* keyboard focus outlines */
+.planner-course-actions select:focus-visible,
+.planner-remove:focus-visible,
+.planner-add-semester:focus-visible {
+  outline: 3px solid rgba(250, 70, 22, 0.3);
+  outline-offset: 2px;
+}
+
+/* prereq warning + offering note */
+.planner-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: #8a361e;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.planner-warning svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.planner-note {
+  margin: 6px 0 0;
+  color: #6b4c00;
+  font-size: 0.72rem;
+}
+
+/* add semester button */
+.planner-add-semester {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1.5px dashed var(--light-blue);
+  border-radius: 11px;
+  color: var(--blue);
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.planner-add-semester:hover {
+  background: #eef3ff;
+}
+
+/* small screens */
+@media (max-width: 600px) {
+  .planner-panel {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .planner-course-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .planner-semester {
+    transition: none;
+  }
+}

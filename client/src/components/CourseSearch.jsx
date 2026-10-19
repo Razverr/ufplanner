@@ -9,13 +9,16 @@ import {
   FaTimesCircle,
   FaFilter,
 } from 'react-icons/fa'
+// Zachary Allarey Code Section
+// courses + semesters renamed to defaults so the live plan can be passed in as props
 import {
-  courses,
-  semesters,
+  courses as defaultCourses,
+  semesters as defaultSemesters,
   degreeRequirements,
   requirementLabels,
-  semesterOrder,
 } from '../data/mockdata'
+import { COURSE_DRAG_TYPE } from '../utils/planner'
+// end Zachary Allarey Code Section
 import './CourseSearch.css'
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -47,7 +50,11 @@ const offeringStatusConfig = {
  * Limitation: this prototype uses simple AND-only prerequisites.
  * OR-groups, co-requisites, and minimum-grade rules are not modeled.
  */
-function isPrereqSatisfied(prereqId, destinationSemesterId) {
+// Zachary Allarey Code Section
+// takes courses + semesters as params so prereq checks use the live plan
+function isPrereqSatisfied(prereqId, destinationSemesterId, courses, semesters) {
+  const semesterOrder = semesters.map((s) => s.id)
+  // end Zachary Allarey Code Section
   const prereqCourse = courses.find((c) => c.id === prereqId)
   if (!prereqCourse) return { satisfied: false, reason: 'Course not found in catalog.' }
 
@@ -77,7 +84,9 @@ function isPrereqSatisfied(prereqId, destinationSemesterId) {
   }
 }
 
-function areAllPrereqsSatisfied(course, destinationSemesterId) {
+// Zachary Allarey Code Section
+// passes courses + semesters through to the prereq check
+function areAllPrereqsSatisfied(course, destinationSemesterId, courses, semesters) {
   if (course.prerequisites.length === 0) return { allMet: true, results: [] }
 
   const results = course.prerequisites.map((prereqId) => {
@@ -85,16 +94,27 @@ function areAllPrereqsSatisfied(course, destinationSemesterId) {
     return {
       prereqId,
       code: prereqCourse?.code ?? prereqId,
-      ...isPrereqSatisfied(prereqId, destinationSemesterId),
+      ...isPrereqSatisfied(prereqId, destinationSemesterId, courses, semesters),
     }
   })
 
   return { allMet: results.every((r) => r.satisfied), results }
 }
+// end Zachary Allarey Code Section
 
 // ── Component ───────────────────────────────────────────────────────
 
-function CourseSearch({ selectedRequirementId, selectedSemesterId, onSemesterChange }) {
+function CourseSearch({
+  // Zachary Allarey Code Section
+  // live plan data + add to plan handler from App.jsx
+  courses = defaultCourses,
+  semesters = defaultSemesters,
+  onAddToPlan,
+  // end Zachary Allarey Code Section
+  selectedRequirementId,
+  selectedSemesterId,
+  onSemesterChange,
+}) {
   const [searchText, setSearchText] = useState('')
   const [requirementFilter, setRequirementFilter] = useState(selectedRequirementId ?? '')
   const [semesterFilter, setSemesterFilter] = useState(selectedSemesterId ?? 'fall-2026')
@@ -127,7 +147,9 @@ function CourseSearch({ selectedRequirementId, selectedSemesterId, onSemesterCha
 
       return true
     })
-  }, [searchText, requirementFilter])
+    // Zachary Allarey Code Section
+    // added courses so the list updates when the plan changes
+  }, [courses, searchText, requirementFilter])
 
   // ── Determine active filters ───────────────────────────────────────
   const activeFilters = []
@@ -248,10 +270,38 @@ function CourseSearch({ selectedRequirementId, selectedSemesterId, onSemesterCha
             const offering = course.offerings[semesterFilter]
             const offeringConf = offeringStatusConfig[offering] ?? offeringStatusConfig.unknown
             const isExpanded = expandedCourseId === course.id
-            const prereqCheck = areAllPrereqsSatisfied(course, semesterFilter)
+
+            // Zachary Allarey Code Section
+            // prereq check uses the live plan
+            const prereqCheck = areAllPrereqsSatisfied(course, semesterFilter, courses, semesters)
+            const semesterLabel =
+              semesters.find((s) => s.id === semesterFilter)?.label ?? semesterFilter
+            // button label says exactly where the course goes
+            const isCompleted = course.academicStatus === 'completed'
+            const isInSelectedSemester =
+              course.academicStatus === 'planned' && course.plannedSemester === semesterFilter
+            const addLabel = isCompleted
+              ? 'Completed'
+              : isInSelectedSemester
+                ? 'In plan'
+                : course.academicStatus === 'planned'
+                  ? `Move to ${semesterLabel}`
+                  : `Add to ${semesterLabel}`
+            // end Zachary Allarey Code Section
 
             return (
-              <div className="course-card" key={course.id} role="listitem">
+              // Zachary Allarey Code Section
+              // card can be dragged into the semester planner (not completed courses)
+              <div
+                className="course-card"
+                key={course.id}
+                role="listitem"
+                draggable={!isCompleted}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(COURSE_DRAG_TYPE, course.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+              >
                 {/* Header row with prominent Add to Plan */}
                 <div className="course-card-header">
                   <div className="course-card-title">
@@ -264,16 +314,17 @@ function CourseSearch({ selectedRequirementId, selectedSemesterId, onSemesterCha
                     <span className="course-title">{course.title}</span>
                   </div>
                   <div className="course-card-header-actions">
+                    {/* Zachary Allarey Code Section */}
+                    {/* add to plan now adds the course to the selected semester */}
                     <button
                       className="add-to-plan-btn"
-                      onClick={() => {
-                        /* Placeholder — no action in this prototype */
-                      }}
-                      aria-label={`Add ${course.code} to plan`}
-                      title={`Add ${course.code} to plan`}
+                      disabled={isCompleted || isInSelectedSemester}
+                      onClick={() => onAddToPlan?.(course.id, semesterFilter)}
+                      aria-label={`${addLabel}: ${course.code}`}
+                      title={`${addLabel}: ${course.code}`}
                     >
                       <FaPlusCircle aria-hidden="true" />
-                      <span>Add to plan</span>
+                      <span>{addLabel}</span>
                     </button>
                   </div>
                 </div>
@@ -360,7 +411,7 @@ function CourseSearch({ selectedRequirementId, selectedSemesterId, onSemesterCha
                       <p className="offering-note">
                         <strong>Note:</strong> "Available" means this course is scheduled to be
                         offered in{' '}
-                        {semesters.find((s) => s.id === semesterFilter)?.label ?? semesterFilter}.
+                        {semesterLabel}.
                         It does not guarantee that registration seats are available.
                       </p>
                     )}

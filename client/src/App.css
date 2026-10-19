@@ -38,24 +38,57 @@
   font-weight: 700;
 }
 
-/* ── Two-panel layout (Requirements + Course Discovery) ──────────── */
+/* Zachary Allarey Code Section */
+/* three column layout: discovery | planner | requirements */
 .panel-layout {
   display: grid;
-  grid-template-columns: minmax(0, 620px) minmax(340px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
   align-items: start;
-  gap: 24px;
+  gap: 20px;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
-@media (max-width: 1000px) {
+/* requirements panel fills its column */
+.panel-layout .requirements-panel {
+  width: 100%;
+}
+
+/* lets the credit summary wrap under the title so it doesn't get cut off */
+.panel-layout .requirements-heading {
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+/* hides text visually but keeps it for screen readers (course discovery uses this) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* medium screens: 2 columns, requirements goes full width below */
+@media (max-width: 1200px) {
+  .panel-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-layout .requirements-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+/* small screens: 1 column */
+@media (max-width: 800px) {
   .panel-layout {
     grid-template-columns: 1fr;
   }
-
-  .requirements-panel {
-    width: 100%;
-  }
 }
+/* end Zachary Allarey Code Section */
 
 @media (max-width: 600px) {
   .app-shell {
