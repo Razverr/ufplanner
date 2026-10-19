@@ -1,5 +1,5 @@
 .app-shell {
-  width: min(1180px, calc(100% - 40px));
+  width: min(1380px, calc(100% - 40px));
   margin: 0 auto;
   padding: 34px 0 60px;
 }
@@ -38,71 +38,17 @@
   font-weight: 700;
 }
 
-.preview-layout {
+/* ── Two-panel layout (Requirements + Course Discovery) ──────────── */
+.panel-layout {
   display: grid;
-  grid-template-columns: minmax(0, 620px) minmax(250px, 1fr);
+  grid-template-columns: minmax(0, 620px) minmax(340px, 1fr);
   align-items: start;
   gap: 24px;
 }
 
-.integration-preview {
-  padding: 26px;
-  border: 1px dashed var(--light-blue);
-  border-radius: 18px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.72);
-  text-align: left;
-}
-
-.preview-label {
-  margin: 0 0 7px;
-  color: var(--blue);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.integration-preview h2 {
-  margin: 0 0 10px;
-  color: var(--navy);
-  font-size: 1.25rem;
-}
-
-.integration-preview > p:not(.preview-label) {
-  margin: 0;
-  color: var(--muted-text);
-  font-size: 0.84rem;
-  line-height: 1.55;
-}
-
-.preview-course {
-  display: grid;
-  gap: 3px;
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid var(--soft-border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-
-.preview-course span {
-  color: var(--orange);
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-.preview-course strong {
-  color: var(--navy);
-}
-
-.preview-course small {
-  color: var(--muted-text);
-  font-size: 0.72rem;
-}
-
-@media (max-width: 880px) {
-  .preview-layout {
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .panel-layout {
     grid-template-columns: 1fr;
   }
 
@@ -113,7 +59,7 @@
 
 @media (max-width: 600px) {
   .app-shell {
-    width: min(100% - 24px, 1180px);
+    width: min(100% - 24px, 1380px);
     padding-top: 22px;
   }
 
