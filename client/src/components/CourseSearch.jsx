@@ -129,24 +129,30 @@ function CourseSearch({
     }
   }, [selectedRequirementId])
 
-  // ── Filtering ──────────────────────────────────────────────────────
+  // ── Filtering & Sorting ────────────────────────────────────────────
   const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
-      // Text search (case-insensitive)
-      if (searchText) {
-        const q = searchText.toLowerCase()
-        const matchesCode = course.code.toLowerCase().includes(q)
-        const matchesTitle = course.title.toLowerCase().includes(q)
-        if (!matchesCode && !matchesTitle) return false
-      }
+    return courses
+      .filter((course) => {
+        // Text search (case-insensitive)
+        if (searchText) {
+          const q = searchText.toLowerCase()
+          const matchesCode = course.code.toLowerCase().includes(q)
+          const matchesTitle = course.title.toLowerCase().includes(q)
+          if (!matchesCode && !matchesTitle) return false
+        }
 
-      // Requirement category filter
-      if (requirementFilter && !course.requirementIds.includes(requirementFilter)) {
-        return false
-      }
+        // Requirement category filter
+        if (requirementFilter && !course.requirementIds.includes(requirementFilter)) {
+          return false
+        }
 
-      return true
-    })
+        return true
+      })
+      .sort((a, b) => {
+        const aCompleted = a.academicStatus === 'completed' ? 1 : 0
+        const bCompleted = b.academicStatus === 'completed' ? 1 : 0
+        return aCompleted - bCompleted
+      })
     // Zachary Allarey Code Section
     // added courses so the list updates when the plan changes
   }, [courses, searchText, requirementFilter])

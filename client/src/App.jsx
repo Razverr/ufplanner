@@ -61,10 +61,18 @@ function App() {
           <p className="app-name">UF Planner</p>
           <h1>Computer Science, B.S.</h1>
         </div>
-        <span className="student-year">Fall 2026 plan</span>
+        <span className="student-year">Current Plan</span>
       </header>
 
       <div className="panel-layout">
+        <Requirements
+          // Zachary Allarey Code Section
+          // uses recalculated credits instead of the static mock data
+          requirements={requirements}
+          selectedRequirementId={selectedRequirementId}
+          onSelectRequirement={setSelectedRequirementId}
+        />
+
         <CourseSearch
           selectedRequirementId={selectedRequirementId}
           selectedSemesterId={selectedSemesterId}
@@ -84,14 +92,6 @@ function App() {
           startSemesterId="spring-2026"
           onMoveCourse={moveCourse}
           onAddSemester={addSemester}
-        />
-
-        <Requirements
-          // Zachary Allarey Code Section
-          // uses recalculated credits instead of the static mock data
-          requirements={requirements}
-          selectedRequirementId={selectedRequirementId}
-          onSelectRequirement={setSelectedRequirementId}
         />
       </div>
     </main>

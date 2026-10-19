@@ -42,7 +42,7 @@
 /* three column layout: discovery | planner | requirements */
 .panel-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: 20px;
 }
