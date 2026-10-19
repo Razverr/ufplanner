@@ -61,7 +61,7 @@ function App() {
           <p className="app-name">UF Planner</p>
           <h1>Computer Science, B.S.</h1>
         </div>
-        <span className="student-year">Current Plan</span>
+        <span className="student-year">Fall 2026</span>
       </header>
 
       <div className="panel-layout">
