@@ -1,17 +1,20 @@
 /* ──────────────────────────────────────────────────────────────────────
-   CourseSearch.css — Course Discovery Panel styles
+   CourseSearch.css — Course Discovery Panel styles with UF branding
+   Responsive, auto-wrapping layout to prevent horizontal scrollbars
    ────────────────────────────────────────────────────────────────────── */
 
 /* ── Panel container ─────────────────────────────────────────────── */
 .course-panel {
   width: 100%;
-  padding: 28px;
+  min-width: 0; /* Essential for CSS Grid columns to prevent blowout */
+  padding: 22px 20px;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
   box-shadow: var(--shadow);
   box-sizing: border-box;
   text-align: left;
+  overflow: hidden;
 }
 
 .course-panel-heading {
@@ -19,6 +22,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .course-panel-heading h2 {
@@ -26,22 +30,26 @@
   color: var(--navy);
   font-size: 1.45rem;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 /* ── Search & filter controls ────────────────────────────────────── */
 .course-search-bar {
   position: relative;
-  margin-top: 18px;
+  margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .course-search-bar input {
   width: 100%;
-  padding: 12px 14px 12px 40px;
+  box-sizing: border-box;
+  padding: 11px 14px 11px 38px;
   border: 1px solid var(--border);
   border-radius: 11px;
   color: var(--text);
   background: var(--surface);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   transition: border-color 150ms;
 }
 
@@ -56,7 +64,7 @@
   top: 50%;
   left: 13px;
   color: var(--muted-text);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -64,19 +72,23 @@
 .course-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin-top: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .course-filters select {
-  flex: 1 1 auto;
-  min-width: 150px;
-  padding: 9px 12px;
+  flex: 1 1 130px;
+  min-width: 0; /* Allow shrinking to fit any panel width */
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
   border: 1px solid var(--border);
   border-radius: 9px;
   color: var(--text);
   background: var(--surface);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: border-color 150ms;
 }
@@ -92,22 +104,25 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 6px 8px;
+  margin-top: 12px;
+  width: 100%;
 }
 
 .active-filter-tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
+  padding: 4px 9px;
   border: none;
   border-radius: 999px;
   color: var(--blue);
   background: #eef3ff;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
+  max-width: 100%;
+  overflow-wrap: break-word;
   transition: background 150ms;
 }
 
@@ -121,14 +136,15 @@
 }
 
 .clear-all-btn {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--muted-text);
   background: var(--surface);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
   transition: background 150ms, color 150ms;
 }
 
@@ -145,19 +161,23 @@
 .result-count {
   margin-left: auto;
   color: var(--muted-text);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 650;
+  white-space: nowrap;
 }
 
-/* ── Course list (scrollable) ────────────────────────────────────── */
+/* ── Course list (scrollable vertically only) ─────────────────────── */
 .course-list {
   display: grid;
   gap: 12px;
-  max-height: 620px;
-  margin-top: 16px;
+  max-height: 640px;
+  margin-top: 14px;
   padding-right: 4px;
   overflow-y: auto;
+  overflow-x: hidden; /* Never allow horizontal scrolling */
   overscroll-behavior-y: contain;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .course-list::-webkit-scrollbar {
@@ -175,10 +195,15 @@
 
 /* ── Course card ─────────────────────────────────────────────────── */
 .course-card {
-  padding: 18px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0; /* Allow card to shrink without pushing layout */
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: 13px;
   background: var(--surface);
+  overflow-wrap: break-word;
+  word-break: break-word;
   transition: border-color 150ms, box-shadow 150ms;
 }
 
@@ -187,50 +212,45 @@
   box-shadow: 0 6px 16px rgba(0, 33, 165, 0.06);
 }
 
+/* Card Header — flex-wraps gracefully on narrower screens */
 .course-card-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .course-card-title {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  flex: 1 1 160px;
+  min-width: 0; /* Crucial for text ellipsis/wrapping in flex items */
 }
 
 .course-code-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .course-code {
   color: var(--orange);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.04em;
-}
-
-.course-title {
-  color: var(--navy);
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.course-card-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .course-credits {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   color: var(--navy);
   background: #eef2f8;
@@ -240,22 +260,77 @@
   white-space: nowrap;
 }
 
+.course-title {
+  color: var(--navy);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.course-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* ── Add to plan button ──────────────────────────────────────────── */
+.add-to-plan-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--blue);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: background 150ms, transform 100ms;
+}
+
+.add-to-plan-btn:hover {
+  background: #001a8a;
+  transform: translateY(-1px);
+}
+
+.add-to-plan-btn:focus-visible {
+  outline: 3px solid rgba(250, 70, 22, 0.3);
+  outline-offset: 2px;
+}
+
+.add-to-plan-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ── Status badges row ───────────────────────────────────────────── */
 .course-status-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px 8px;
   margin-top: 10px;
+  width: 100%;
 }
 
 .course-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
+  gap: 4px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 750;
+  white-space: nowrap;
 }
 
 /* Academic status */
@@ -294,8 +369,8 @@
 .status-separator {
   display: inline-block;
   width: 1px;
-  height: 16px;
-  margin: 0 2px;
+  height: 14px;
+  margin: 0 1px;
   background: var(--border);
 }
 
@@ -303,17 +378,19 @@
 .course-requirement-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   margin-top: 8px;
+  width: 100%;
 }
 
 .requirement-tag {
-  padding: 3px 8px;
+  padding: 3px 7px;
   border-radius: 6px;
   color: var(--blue);
   background: #eef3ff;
   font-size: 0.66rem;
   font-weight: 700;
+  overflow-wrap: break-word;
 }
 
 /* ── Expand / collapse control ───────────────────────────────────── */
@@ -355,20 +432,25 @@
 
 /* ── Expanded details section ────────────────────────────────────── */
 .course-details {
-  margin-top: 14px;
+  margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--soft-border);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .course-description {
   margin: 0 0 12px;
   color: var(--text);
-  font-size: 0.84rem;
-  line-height: 1.55;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .detail-section {
   margin-bottom: 12px;
+  width: 100%;
 }
 
 .detail-label {
@@ -376,7 +458,7 @@
   margin-bottom: 4px;
   color: var(--muted-text);
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -385,6 +467,7 @@
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.5;
+  overflow-wrap: break-word;
 }
 
 /* Prerequisite status inline badges */
@@ -392,11 +475,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: 6px;
   padding: 2px 7px;
   border-radius: 5px;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .prereq-met {
@@ -411,11 +494,12 @@
 
 .prereq-explanation {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: #8a361e;
-  font-size: 0.76rem;
-  font-style: italic;
-  line-height: 1.45;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .requirement-reason {
@@ -423,46 +507,157 @@
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-/* ── Add to plan button ──────────────────────────────────────────── */
-.add-to-plan-btn {
-  display: inline-flex;
+/* ── Raw Prerequisite Quote Box ──────────────────────────────────── */
+.prereq-raw-box {
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--light-blue);
+  border-radius: 0 8px 8px 0;
+  background: #f4f7fb;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.prereq-clause-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.prereq-clause-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  border: 1px solid var(--soft-border);
+  border-radius: 7px;
+  background: #fdfdfd;
+  font-size: 0.74rem;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+}
+
+.prereq-clause-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+.prereq-clause-text {
+  font-weight: 650;
+  color: var(--navy);
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.prereq-advisory-pill {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #fff8eb;
+  border: 1px solid #fedf9e;
+  color: #7b4e05;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.prereq-advisory-pill svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.variable-credits-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f0f3f8;
+  color: var(--muted-text);
+  font-size: 0.64rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Offering disclaimer ─────────────────────────────────────────── */
+.offering-note {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--muted-text);
+  background: #f8f9fc;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+/* ── Provenance & Freshness Footer ──────────────────────────────── */
+.provenance-card {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #f7f9fd;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--muted-text);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.provenance-header {
+  display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  background: var(--blue);
+  margin-bottom: 6px;
+  font-weight: 750;
+  color: var(--navy);
   font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 150ms, transform 100ms;
 }
 
-.add-to-plan-btn:hover {
-  background: #001a8a;
-  transform: translateY(-1px);
+.provenance-card a {
+  color: var(--blue);
+  text-decoration: underline;
+  overflow-wrap: break-word;
 }
 
-.add-to-plan-btn:focus-visible {
-  outline: 3px solid rgba(250, 70, 22, 0.3);
-  outline-offset: 2px;
-}
-
-.add-to-plan-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
+.provenance-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 0.68rem;
+  color: #55627a;
 }
 
 /* ── Empty state ─────────────────────────────────────────────────── */
 .course-empty-state {
-  padding: 40px 20px;
+  padding: 36px 16px;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .course-empty-state .empty-icon {
@@ -478,19 +673,19 @@
 }
 
 .course-empty-state p {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   color: var(--muted-text);
-  font-size: 0.86rem;
-  line-height: 1.55;
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 .empty-clear-btn {
-  padding: 9px 20px;
+  padding: 8px 18px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 999px;
   color: var(--blue);
   background: var(--surface);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: background 150ms;
@@ -505,21 +700,51 @@
   outline-offset: 2px;
 }
 
-/* ── Offering disclaimer ─────────────────────────────────────────── */
-.offering-note {
-  margin: 14px 0 0;
-  padding: 10px 14px;
-  border-radius: 9px;
-  color: var(--muted-text);
-  background: #f8f9fc;
-  font-size: 0.72rem;
-  line-height: 1.55;
+/* ── Pagination / Load More ────────────────────────────────────────── */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+  width: 100%;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--blue);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms ease;
+  box-sizing: border-box;
+}
+
+.load-more-btn:hover {
+  background: #f0f4ff;
+  border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0, 33, 165, 0.08);
+}
+
+.load-more-btn:focus-visible {
+  outline: 3px solid rgba(0, 33, 165, 0.35);
+  outline-offset: 2px;
+}
+
+.load-more-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── Responsive adjustments ──────────────────────────────────────── */
 @media (max-width: 600px) {
   .course-panel {
-    padding: 18px;
+    padding: 16px;
     border-radius: 14px;
   }
 
@@ -539,6 +764,7 @@
 
   .course-status-row {
     flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
   }
 

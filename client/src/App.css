@@ -47,9 +47,16 @@
   gap: 20px;
 }
 
+/* Ensure all panels and their children respect their grid column width without blowout */
+.panel-layout > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 /* requirements panel fills its column */
 .panel-layout .requirements-panel {
   width: 100%;
+  min-width: 0;
 }
 
 /* lets the credit summary wrap under the title so it doesn't get cut off */

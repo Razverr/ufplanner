@@ -1,5 +1,7 @@
 // Zachary Allarey Code Section
-// shared helpers for the semester planner
+// shared helpers for the semester planner, enhanced with UF prerequisite evaluator
+
+import { parseRawPrerequisites, evaluatePrerequisites } from './prereqs'
 
 // drag and drop type, value is a course id like "cop-3530"
 export const COURSE_DRAG_TYPE = 'application/x-ufplanner-course'
@@ -7,28 +9,50 @@ export const COURSE_DRAG_TYPE = 'application/x-ufplanner-course'
 // finds planned courses whose prereqs aren't done or planned earlier
 // returns { courseId: ["COP 3503", ...] }
 export function getPrereqIssues(courses, semesters) {
-  const order = semesters.map((s) => s.id)
-  const byId = Object.fromEntries(courses.map((c) => [c.id, c]))
   const issues = {}
 
   for (const course of courses) {
-    if (course.academicStatus !== 'planned') continue
-    const destIndex = order.indexOf(course.plannedSemester)
+    if (course.academicStatus !== 'planned' || !course.plannedSemester) continue
 
-    const missing = course.prerequisites
-      .filter((prereqId) => {
-        const prereq = byId[prereqId]
-        if (!prereq) return true
-        if (prereq.academicStatus === 'completed') return false
-        // planned prereq only counts if it's in an earlier semester
-        if (prereq.academicStatus === 'planned') {
-          return order.indexOf(prereq.plannedSemester) >= destIndex
+    if (course.raw_prerequisites || course.prereq_rules) {
+      const parsed = course.prereq_rules || parseRawPrerequisites(course.raw_prerequisites)
+      const evaluation = evaluatePrerequisites(parsed, course.plannedSemester, courses, semesters)
+      if (!evaluation.isSatisfied) {
+        const missing = []
+        for (const detail of evaluation.details) {
+          if (!detail.satisfied) {
+            if (detail.options && detail.options.length > 0) {
+              missing.push(detail.options.map((o) => o.code || o).join(' or '))
+            } else if (detail.rawClause) {
+              missing.push(detail.rawClause)
+            } else if (detail.reason) {
+              missing.push(detail.reason)
+            }
+          }
         }
-        return true
-      })
-      .map((prereqId) => byId[prereqId]?.code ?? prereqId)
+        if (missing.length > 0) {
+          issues[course.id] = missing
+        }
+      }
+    } else if (Array.isArray(course.prerequisites) && course.prerequisites.length > 0) {
+      const order = semesters.map((s) => s.id)
+      const byId = Object.fromEntries(courses.map((c) => [c.id, c]))
+      const destIndex = order.indexOf(course.plannedSemester)
 
-    if (missing.length > 0) issues[course.id] = missing
+      const missing = course.prerequisites
+        .filter((prereqId) => {
+          const prereq = byId[prereqId]
+          if (!prereq) return true
+          if (prereq.academicStatus === 'completed') return false
+          if (prereq.academicStatus === 'planned') {
+            return order.indexOf(prereq.plannedSemester) >= destIndex
+          }
+          return true
+        })
+        .map((prereqId) => byId[prereqId]?.code ?? prereqId)
+
+      if (missing.length > 0) issues[course.id] = missing
+    }
   }
 
   return issues
@@ -51,11 +75,11 @@ export function nextSemester(lastSemester) {
 // planned credits are capped at what's still needed
 export function deriveRequirementCredits(requirements, courses) {
   return requirements.map((requirement) => {
-    const matching = courses.filter((c) => c.requirementIds.includes(requirement.id))
+    const matching = courses.filter((c) => (c.requirementIds || []).includes(requirement.id))
     const creditsWith = (status) =>
       matching
         .filter((c) => c.academicStatus === status)
-        .reduce((sum, c) => sum + c.credits, 0)
+        .reduce((sum, c) => sum + (Number(c.credits) || 3), 0)
 
     const completedCredits = creditsWith('completed')
     const stillNeeded = Math.max(requirement.totalCredits - completedCredits, 0)

@@ -8,9 +8,10 @@ import {
   FaPlusCircle,
   FaTimesCircle,
   FaFilter,
+  FaInfoCircle,
+  FaExternalLinkAlt,
+  FaDatabase
 } from 'react-icons/fa'
-// Zachary Allarey Code Section
-// courses + semesters renamed to defaults so the live plan can be passed in as props
 import {
   courses as defaultCourses,
   semesters as defaultSemesters,
@@ -18,109 +19,55 @@ import {
   requirementLabels,
 } from '../data/mockdata'
 import { COURSE_DRAG_TYPE } from '../utils/planner'
-// end Zachary Allarey Code Section
+import { parseRawPrerequisites, evaluatePrerequisites } from '../utils/prereqs'
 import './CourseSearch.css'
 
-// ── Helpers ─────────────────────────────────────────────────────────
+// ── Status configurations ───────────────────────────────────────────
 
-/** Status labels for academic status */
 const academicStatusConfig = {
   completed: { label: 'Completed', className: 'badge-completed', Icon: FaCheckCircle },
   planned: { label: 'Planned', className: 'badge-planned', Icon: FaAdjust },
   'not-planned': { label: 'Not planned', className: 'badge-not-planned', Icon: FaRegSquare },
 }
 
-/** Status labels for offering status */
 const offeringStatusConfig = {
-  available: { label: 'Available', className: 'badge-available' },
-  predicted: { label: 'Predicted', className: 'badge-predicted' },
-  unknown: { label: 'Unknown', className: 'badge-unknown' },
+  available: { label: 'Confirmed Offering', className: 'badge-available' },
+  predicted: { label: 'Predicted Offering', className: 'badge-predicted' },
+  unknown: { label: 'Unknown Availability', className: 'badge-unknown' },
 }
-
-/**
- * Check whether a single prerequisite course is satisfied before
- * the given destination semester.
- *
- * A prerequisite is satisfied if:
- *   1. The prerequisite course has academicStatus === "completed", OR
- *   2. The prerequisite course has academicStatus === "planned" and its
- *      plannedSemester comes strictly before destinationSemester in
- *      semesterOrder.
- *
- * Limitation: this prototype uses simple AND-only prerequisites.
- * OR-groups, co-requisites, and minimum-grade rules are not modeled.
- */
-// Zachary Allarey Code Section
-// takes courses + semesters as params so prereq checks use the live plan
-function isPrereqSatisfied(prereqId, destinationSemesterId, courses, semesters) {
-  const semesterOrder = semesters.map((s) => s.id)
-  // end Zachary Allarey Code Section
-  const prereqCourse = courses.find((c) => c.id === prereqId)
-  if (!prereqCourse) return { satisfied: false, reason: 'Course not found in catalog.' }
-
-  if (prereqCourse.academicStatus === 'completed') {
-    return { satisfied: true }
-  }
-
-  if (prereqCourse.academicStatus === 'planned' && prereqCourse.plannedSemester) {
-    const prereqIndex = semesterOrder.indexOf(prereqCourse.plannedSemester)
-    const destIndex = semesterOrder.indexOf(destinationSemesterId)
-    if (prereqIndex >= 0 && destIndex >= 0 && prereqIndex < destIndex) {
-      return { satisfied: true }
-    }
-    if (prereqIndex >= destIndex) {
-      return {
-        satisfied: false,
-        reason: `${prereqCourse.code} is planned for ${
-          semesters.find((s) => s.id === prereqCourse.plannedSemester)?.label ?? prereqCourse.plannedSemester
-        }, which is not before the destination semester.`,
-      }
-    }
-  }
-
-  return {
-    satisfied: false,
-    reason: `${prereqCourse.code} is not completed or planned in an earlier semester.`,
-  }
-}
-
-// Zachary Allarey Code Section
-// passes courses + semesters through to the prereq check
-function areAllPrereqsSatisfied(course, destinationSemesterId, courses, semesters) {
-  if (course.prerequisites.length === 0) return { allMet: true, results: [] }
-
-  const results = course.prerequisites.map((prereqId) => {
-    const prereqCourse = courses.find((c) => c.id === prereqId)
-    return {
-      prereqId,
-      code: prereqCourse?.code ?? prereqId,
-      ...isPrereqSatisfied(prereqId, destinationSemesterId, courses, semesters),
-    }
-  })
-
-  return { allMet: results.every((r) => r.satisfied), results }
-}
-// end Zachary Allarey Code Section
-
-// ── Component ───────────────────────────────────────────────────────
 
 function CourseSearch({
-  // Zachary Allarey Code Section
-  // live plan data + add to plan handler from App.jsx
   courses = defaultCourses,
   semesters = defaultSemesters,
   onAddToPlan,
-  // end Zachary Allarey Code Section
   selectedRequirementId,
   selectedSemesterId,
   onSemesterChange,
 }) {
   const [searchText, setSearchText] = useState('')
   const [requirementFilter, setRequirementFilter] = useState(selectedRequirementId ?? '')
-  const [semesterFilter, setSemesterFilter] = useState(selectedSemesterId ?? 'fall-2026')
+
+  // Remove hardcoded semester default: prioritize prop, then first available semester
+  const initialSemester = selectedSemesterId || (semesters && semesters.length > 0 ? semesters[0].id : '')
+  const [semesterFilter, setSemesterFilter] = useState(initialSemester)
   const [expandedCourseId, setExpandedCourseId] = useState(null)
 
-  // Sync incoming requirement selection from the Requirements panel
+  const PAGE_SIZE = 50
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
+
+  // Reset pagination window when filters change
+  useEffect(() => {
+    setDisplayLimit(PAGE_SIZE)
+  }, [searchText, requirementFilter, semesterFilter])
+
+  // Synchronize parent-driven semester changes
+  useEffect(() => {
+    if (selectedSemesterId && selectedSemesterId !== semesterFilter) {
+      setSemesterFilter(selectedSemesterId)
+    }
+  }, [selectedSemesterId])
+
+  // Synchronize incoming requirement selection from Requirements panel
   const prevReqRef = useRef(selectedRequirementId)
   useEffect(() => {
     if (selectedRequirementId !== prevReqRef.current) {
@@ -133,16 +80,17 @@ function CourseSearch({
   const filteredCourses = useMemo(() => {
     return courses
       .filter((course) => {
-        // Text search (case-insensitive)
+        // Text search (case-insensitive) on code, title, or description
         if (searchText) {
           const q = searchText.toLowerCase()
           const matchesCode = course.code.toLowerCase().includes(q)
           const matchesTitle = course.title.toLowerCase().includes(q)
-          if (!matchesCode && !matchesTitle) return false
+          const matchesDesc = (course.description || '').toLowerCase().includes(q)
+          if (!matchesCode && !matchesTitle && !matchesDesc) return false
         }
 
         // Requirement category filter
-        if (requirementFilter && !course.requirementIds.includes(requirementFilter)) {
+        if (requirementFilter && !(course.requirementIds || []).includes(requirementFilter)) {
           return false
         }
 
@@ -153,18 +101,24 @@ function CourseSearch({
         const bCompleted = b.academicStatus === 'completed' ? 1 : 0
         return aCompleted - bCompleted
       })
-    // Zachary Allarey Code Section
-    // added courses so the list updates when the plan changes
   }, [courses, searchText, requirementFilter])
 
-  // ── Determine active filters ───────────────────────────────────────
+  // ── Active Filters ─────────────────────────────────────────────────
   const activeFilters = []
   if (searchText) {
-    activeFilters.push({ key: 'search', label: `Search: "${searchText}"`, clear: () => setSearchText('') })
+    activeFilters.push({
+      key: 'search',
+      label: `Search: "${searchText}"`,
+      clear: () => setSearchText(''),
+    })
   }
   if (requirementFilter) {
     const reqName = requirementLabels[requirementFilter] ?? requirementFilter
-    activeFilters.push({ key: 'req', label: reqName, clear: () => setRequirementFilter('') })
+    activeFilters.push({
+      key: 'req',
+      label: reqName,
+      clear: () => setRequirementFilter(''),
+    })
   }
 
   const clearAllFilters = () => {
@@ -173,8 +127,13 @@ function CourseSearch({
   }
 
   const hasActiveFilters = activeFilters.length > 0
+  const activeSemesterObj = (semesters || []).find((s) => s.id === semesterFilter) || semesters[0]
+  const semesterLabel = activeSemesterObj?.label || semesterFilter
 
-  // ── Render ─────────────────────────────────────────────────────────
+  const displayedCourses = useMemo(() => {
+    return filteredCourses.slice(0, displayLimit)
+  }, [filteredCourses, displayLimit])
+
   return (
     <section className="course-panel" aria-labelledby="course-panel-title">
       {/* Heading */}
@@ -217,8 +176,9 @@ function CourseSearch({
           aria-label="Select semester for offering status"
           value={semesterFilter}
           onChange={(e) => {
-            setSemesterFilter(e.target.value)
-            onSemesterChange?.(e.target.value)
+            const nextSem = e.target.value
+            setSemesterFilter(nextSem)
+            onSemesterChange?.(nextSem)
           }}
         >
           {semesters.map((sem) => (
@@ -247,7 +207,9 @@ function CourseSearch({
           </button>
         )}
         <span className="result-count">
-          {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} found
+          {filteredCourses.length > displayLimit
+            ? `Showing ${displayedCourses.length} of ${filteredCourses.length} courses`
+            : `${filteredCourses.length} course${filteredCourses.length !== 1 ? 's' : ''} found`}
         </span>
       </div>
 
@@ -270,19 +232,17 @@ function CourseSearch({
         </div>
       ) : (
         <div className="course-list" role="list">
-          {filteredCourses.map((course) => {
-            const academic = academicStatusConfig[course.academicStatus]
+          {displayedCourses.map((course) => {
+            const academic = academicStatusConfig[course.academicStatus] || academicStatusConfig['not-planned']
             const AcademicIcon = academic.Icon
-            const offering = course.offerings[semesterFilter]
+            const offering = course.offerings?.[semesterFilter] || 'unknown'
             const offeringConf = offeringStatusConfig[offering] ?? offeringStatusConfig.unknown
             const isExpanded = expandedCourseId === course.id
 
-            // Zachary Allarey Code Section
-            // prereq check uses the live plan
-            const prereqCheck = areAllPrereqsSatisfied(course, semesterFilter, courses, semesters)
-            const semesterLabel =
-              semesters.find((s) => s.id === semesterFilter)?.label ?? semesterFilter
-            // button label says exactly where the course goes
+            // Evaluate prerequisites against the FULL student history and plan
+            const parsedPrereqData = course.prereq_rules || parseRawPrerequisites(course.raw_prerequisites)
+            const prereqCheck = evaluatePrerequisites(parsedPrereqData, semesterFilter, courses, semesters)
+
             const isCompleted = course.academicStatus === 'completed'
             const isInSelectedSemester =
               course.academicStatus === 'planned' && course.plannedSemester === semesterFilter
@@ -293,11 +253,8 @@ function CourseSearch({
                 : course.academicStatus === 'planned'
                   ? `Move to ${semesterLabel}`
                   : `Add to ${semesterLabel}`
-            // end Zachary Allarey Code Section
 
             return (
-              // Zachary Allarey Code Section
-              // card can be dragged into the semester planner (not completed courses)
               <div
                 className="course-card"
                 key={course.id}
@@ -314,14 +271,15 @@ function CourseSearch({
                     <div className="course-code-row">
                       <span className="course-code">{course.code}</span>
                       <span className="course-credits">
-                        {course.credits} Credits
+                        {course.credits_display || `${course.credits}`} Credits
                       </span>
+                      {course.credits_min && course.credits_max && course.credits_min !== course.credits_max && (
+                        <span className="variable-credits-tag">Variable</span>
+                      )}
                     </div>
                     <span className="course-title">{course.title}</span>
                   </div>
                   <div className="course-card-header-actions">
-                    {/* Zachary Allarey Code Section */}
-                    {/* add to plan now adds the course to the selected semester */}
                     <button
                       className="add-to-plan-btn"
                       disabled={isCompleted || isInSelectedSemester}
@@ -345,14 +303,14 @@ function CourseSearch({
                   <span className={`course-badge ${offeringConf.className}`}>
                     {offeringConf.label}
                     {offering === 'available' && (
-                      <span className="sr-only"> (offered, but seats are not guaranteed)</span>
+                      <span className="sr-only"> (offered in schedule; seats not guaranteed)</span>
                     )}
                   </span>
                 </div>
 
                 {/* Requirement tags */}
                 <div className="course-requirement-tags">
-                  {course.requirementIds.map((rid) => (
+                  {(course.requirementIds || []).map((rid) => (
                     <span className="requirement-tag" key={rid}>
                       {requirementLabels[rid] ?? rid}
                     </span>
@@ -380,45 +338,86 @@ function CourseSearch({
 
                     {/* Prerequisites */}
                     <div className="detail-section">
-                      <span className="detail-label">Prerequisites</span>
-                      {course.prerequisites.length === 0 ? (
-                        <span className="detail-value">None</span>
+                      <span className="detail-label">Prerequisites &amp; Eligibility</span>
+                      
+                      {/* Verbatim raw prerequisite quote from catalog */}
+                      {course.raw_prerequisites && (
+                        <div className="prereq-raw-box" title="Verbatim text from UF Schedule / Catalog">
+                          <strong>Catalog Prerequisite:</strong> {course.raw_prerequisites}
+                        </div>
+                      )}
+
+                      {prereqCheck.status === 'none' ? (
+                        <span className="prereq-status prereq-met">✓ None required</span>
                       ) : (
-                        <div className="detail-value">
-                          {prereqCheck.results.map((pr) => (
-                            <div key={pr.prereqId} style={{ marginBottom: 6 }}>
-                              <span>{pr.code}</span>
-                              <span className={`prereq-status ${pr.satisfied ? 'prereq-met' : 'prereq-not-met'}`}>
-                                {pr.satisfied ? '✓ Satisfied' : '✗ Not satisfied'}
-                              </span>
-                              {!pr.satisfied && pr.reason && (
-                                <span className="prereq-explanation">{pr.reason}</span>
+                        <div className="prereq-clause-list">
+                          {prereqCheck.details.map((clause, idx) => (
+                            <div key={idx} className="prereq-clause-item">
+                              <div className="prereq-clause-header">
+                                <span className="prereq-clause-text">{clause.rawClause}</span>
+                                <span className={`prereq-status ${clause.satisfied ? 'prereq-met' : 'prereq-not-met'}`}>
+                                  {clause.satisfied ? '✓ Satisfied' : '✗ Not satisfied'}
+                                </span>
+                              </div>
+                              {clause.reason && (
+                                <span className="prereq-explanation">{clause.reason}</span>
                               )}
                             </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Flag complex rules that require advisor / grade review */}
+                      {prereqCheck.hasComplexConditions && (
+                        <div className="prereq-advisory-pill">
+                          <FaInfoCircle aria-hidden="true" />
+                          <span>
+                            <strong>Advisory Rule:</strong> This course contains class standing, minimum grade,
+                            or departmental consent rules that require official degree audit review.
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Advisories list */}
+                      {prereqCheck.advisories && prereqCheck.advisories.length > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          {prereqCheck.advisories.map((adv, i) => (
+                            <small key={i} style={{ display: 'block', color: '#68758b', marginTop: 2 }}>
+                              • {adv}
+                            </small>
                           ))}
                         </div>
                       )}
                     </div>
 
                     {/* Why it satisfies the selected requirement */}
-                    {requirementFilter && course.requirementIds.includes(requirementFilter) && (
+                    {requirementFilter && (course.requirementIds || []).includes(requirementFilter) && (
                       <div className="detail-section">
                         <span className="detail-label">Why this course matches</span>
                         <p className="requirement-reason">
-                          {course.code} is listed under{' '}
-                          <strong>{requirementLabels[requirementFilter]}</strong> and counts toward
-                          the {course.credits}-credit requirement in that category.
+                          {course.requirementExplanations?.[requirementFilter] || (
+                            `${course.code} is listed under ${requirementLabels[requirementFilter]} in the official UF Academic Catalog for Computer Science, B.S.`
+                          )}
                         </p>
                       </div>
                     )}
 
-                    {/* Offering disclaimer */}
-                    {offering === 'available' && (
+                    {/* Honest offering status note */}
+                    {offering === 'available' ? (
                       <p className="offering-note">
-                        <strong>Note:</strong> "Available" means this course is scheduled to be
-                        offered in{' '}
-                        {semesterLabel}.
-                        It does not guarantee that registration seats are available.
+                        <strong>Confirmed Offering:</strong> {course.code} is officially scheduled for{' '}
+                        {semesterLabel} in ONE.UF. Note that this confirms offering availability, not
+                        guaranteed registration seats.
+                      </p>
+                    ) : offering === 'predicted' ? (
+                      <p className="offering-note">
+                        <strong>Predicted Offering:</strong> {course.code} historically runs in{' '}
+                        {semesterLabel.split(' ')[0]} terms, but registration sections have not yet been posted by the department.
+                      </p>
+                    ) : (
+                      <p className="offering-note">
+                        <strong>Unknown Availability:</strong> No confirmed schedule or reliable offering
+                        pattern has been verified for {semesterLabel}.
                       </p>
                     )}
                   </div>
@@ -426,13 +425,48 @@ function CourseSearch({
               </div>
             )
           })}
+
+          {filteredCourses.length > displayLimit && (
+            <div className="load-more-container">
+              <button
+                type="button"
+                className="load-more-btn"
+                onClick={() => setDisplayLimit((prev) => prev + PAGE_SIZE)}
+              >
+                Load more courses ({displayedCourses.length} of {filteredCourses.length})
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      <p className="offering-note" style={{ marginTop: 18 }}>
-        <strong>Prototype data:</strong> All courses, prerequisites, and offering statuses shown
-        above are fictional and illustrative only. They do not reflect actual UF catalog data.
-      </p>
+      {/* Real Data Provenance & Freshness Footer */}
+      <div className="provenance-card">
+        <div className="provenance-header">
+          <FaDatabase aria-hidden="true" />
+          <span>Real UF Course Data Integration</span>
+        </div>
+        <p style={{ margin: '0 0 6px' }}>
+          Course schedule details sourced from the public{' '}
+          <a href="https://one.uf.edu/soc/" target="_blank" rel="noopener noreferrer">
+            ONE.UF Schedule of Courses API <FaExternalLinkAlt style={{ fontSize: '0.62rem' }} />
+          </a>{' '}
+          and degree requirements verified against the{' '}
+          <a
+            href="https://catalog.ufl.edu/UGRD/colleges-schools/UGENG/CPS_BSCS/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            UF Academic Catalog <FaExternalLinkAlt style={{ fontSize: '0.62rem' }} />
+          </a>{' '}
+          for Computer Science B.S. (Catalog Year 2026-2027).
+        </p>
+        <div className="provenance-meta">
+          <span>Active Context: <strong>{semesterLabel}</strong></span>
+          <span>Source: <strong>ONE.UF SOC / PostgreSQL</strong></span>
+          <span>Freshness: <strong>Live Schedule Synced</strong></span>
+        </div>
+      </div>
     </section>
   )
 }
