@@ -11,6 +11,8 @@
 
 import { pool } from './pool.js';
 import { parseRawPrerequisites } from '../utils/prereqs.js';
+import { DEMO_AUDIT_IMPORT } from '../data/demo-audit.js';
+import { validateAuditImport } from '../services/degree-audit.js';
 
 export const VERIFIED_PROGRAM = {
   id: 'cs-bs-eng',
@@ -496,6 +498,84 @@ export async function runSeed() {
         `, [c.id, reqId, c.explanation]);
       }
     }
+
+    // 5. Seed a student audit so the end-to-end MVP works immediately.
+    const demoAudit = validateAuditImport(
+      DEMO_AUDIT_IMPORT,
+      DEMO_AUDIT_IMPORT.student.id,
+    );
+    await client.query(`
+      INSERT INTO student_profiles
+        (id, display_name, program_id, catalog_year, updated_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        display_name = EXCLUDED.display_name,
+        program_id = EXCLUDED.program_id,
+        catalog_year = EXCLUDED.catalog_year,
+        updated_at = NOW()
+    `, [
+      demoAudit.student.id,
+      demoAudit.student.displayName,
+      demoAudit.programId,
+      demoAudit.catalogYear
+    ]);
+
+    await client.query(
+      'DELETE FROM degree_audit_imports WHERE student_id = $1',
+      [demoAudit.student.id]
+    );
+    await client.query(
+      'DELETE FROM student_course_records WHERE student_id = $1',
+      [demoAudit.student.id]
+    );
+
+    for (const course of demoAudit.courses) {
+      const catalogCourse = await client.query(
+        'SELECT id, title FROM courses WHERE code = $1',
+        [course.code]
+      );
+      const catalogRow = catalogCourse.rows[0];
+      const inserted = await client.query(`
+        INSERT INTO student_course_records
+          (student_id, course_id, course_code, title, credits, status,
+           source_type, term_label, planned_semester_id, grade, note, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        RETURNING id
+      `, [
+        demoAudit.student.id,
+        catalogRow?.id || null,
+        course.code,
+        course.title || catalogRow?.title || course.code,
+        course.credits,
+        course.status,
+        course.sourceType,
+        course.termLabel,
+        course.plannedSemesterId,
+        course.grade,
+        course.note
+      ]);
+
+      for (const application of course.requirementApplications) {
+        await client.query(`
+          INSERT INTO student_course_requirement_applications
+            (student_course_id, requirement_id, applied_credits)
+          VALUES ($1, $2, $3)
+        `, [inserted.rows[0].id, application.requirementId, application.credits]);
+      }
+    }
+
+    await client.query(`
+      INSERT INTO degree_audit_imports (student_id, source, raw_payload)
+      VALUES ($1, $2, $3::jsonb)
+    `, [
+      demoAudit.student.id,
+      demoAudit.source,
+      JSON.stringify({
+        catalogYear: demoAudit.catalogYear,
+        programId: demoAudit.programId,
+        courseCount: demoAudit.courses.length
+      })
+    ]);
 
     await client.query('COMMIT');
     console.log('✅ Seed data successfully populated into PostgreSQL.');

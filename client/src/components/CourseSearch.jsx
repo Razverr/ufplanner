@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import {
   FaSearch,
   FaChevronRight,
@@ -43,38 +43,16 @@ function CourseSearch({
   selectedRequirementId,
   selectedSemesterId,
   onSemesterChange,
+  onRequirementChange,
 }) {
   const [searchText, setSearchText] = useState('')
-  const [requirementFilter, setRequirementFilter] = useState(selectedRequirementId ?? '')
-
-  // Remove hardcoded semester default: prioritize prop, then first available semester
-  const initialSemester = selectedSemesterId || (semesters && semesters.length > 0 ? semesters[0].id : '')
-  const [semesterFilter, setSemesterFilter] = useState(initialSemester)
+  const requirementFilter = selectedRequirementId ?? ''
+  const semesterFilter =
+    selectedSemesterId || (semesters && semesters.length > 0 ? semesters[0].id : '')
   const [expandedCourseId, setExpandedCourseId] = useState(null)
 
   const PAGE_SIZE = 50
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
-
-  // Reset pagination window when filters change
-  useEffect(() => {
-    setDisplayLimit(PAGE_SIZE)
-  }, [searchText, requirementFilter, semesterFilter])
-
-  // Synchronize parent-driven semester changes
-  useEffect(() => {
-    if (selectedSemesterId && selectedSemesterId !== semesterFilter) {
-      setSemesterFilter(selectedSemesterId)
-    }
-  }, [selectedSemesterId])
-
-  // Synchronize incoming requirement selection from Requirements panel
-  const prevReqRef = useRef(selectedRequirementId)
-  useEffect(() => {
-    if (selectedRequirementId !== prevReqRef.current) {
-      setRequirementFilter(selectedRequirementId ?? '')
-      prevReqRef.current = selectedRequirementId
-    }
-  }, [selectedRequirementId])
 
   // ── Filtering & Sorting ────────────────────────────────────────────
   const filteredCourses = useMemo(() => {
@@ -109,7 +87,10 @@ function CourseSearch({
     activeFilters.push({
       key: 'search',
       label: `Search: "${searchText}"`,
-      clear: () => setSearchText(''),
+      clear: () => {
+        setSearchText('')
+        setDisplayLimit(PAGE_SIZE)
+      },
     })
   }
   if (requirementFilter) {
@@ -117,13 +98,17 @@ function CourseSearch({
     activeFilters.push({
       key: 'req',
       label: reqName,
-      clear: () => setRequirementFilter(''),
+      clear: () => {
+        onRequirementChange?.('')
+        setDisplayLimit(PAGE_SIZE)
+      },
     })
   }
 
   const clearAllFilters = () => {
     setSearchText('')
-    setRequirementFilter('')
+    onRequirementChange?.('')
+    setDisplayLimit(PAGE_SIZE)
   }
 
   const hasActiveFilters = activeFilters.length > 0
@@ -153,7 +138,10 @@ function CourseSearch({
           placeholder="Search by course code or title…"
           aria-label="Search courses by code or title"
           value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          onChange={(e) => {
+            setSearchText(e.target.value)
+            setDisplayLimit(PAGE_SIZE)
+          }}
         />
       </div>
 
@@ -162,7 +150,10 @@ function CourseSearch({
         <select
           aria-label="Filter by requirement category"
           value={requirementFilter}
-          onChange={(e) => setRequirementFilter(e.target.value)}
+          onChange={(e) => {
+            onRequirementChange?.(e.target.value)
+            setDisplayLimit(PAGE_SIZE)
+          }}
         >
           <option value="">All requirements</option>
           {degreeRequirements.map((req) => (
@@ -177,8 +168,8 @@ function CourseSearch({
           value={semesterFilter}
           onChange={(e) => {
             const nextSem = e.target.value
-            setSemesterFilter(nextSem)
             onSemesterChange?.(nextSem)
+            setDisplayLimit(PAGE_SIZE)
           }}
         >
           {semesters.map((sem) => (

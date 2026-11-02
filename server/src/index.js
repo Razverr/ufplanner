@@ -7,6 +7,7 @@ import { semestersRouter } from './routes/semesters.js';
 import { requirementsRouter } from './routes/requirements.js';
 import { metaRouter } from './routes/meta.js';
 import { importRouter } from './routes/import.js';
+import { degreeAuditRouter } from './routes/degree-audit.js';
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 // API Routes
 app.use('/api/courses', coursesRouter);
@@ -22,6 +23,7 @@ app.use('/api/semesters', semestersRouter);
 app.use('/api/requirements', requirementsRouter);
 app.use('/api/meta', metaRouter);
 app.use('/api/import', importRouter);
+app.use('/api/degree-audit', degreeAuditRouter);
 
 app.get('/api/health', async (req, res) => {
   const dbStatus = await testConnection();
