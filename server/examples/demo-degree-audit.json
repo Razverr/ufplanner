@@ -1,0 +1,41 @@
+{
+  "student": {
+    "id": "demo-student",
+    "displayName": "Demo Student"
+  },
+  "programId": "cs-bs-eng",
+  "catalogYear": "2026-2027",
+  "source": "manual-json",
+  "courses": [
+    {
+      "code": "MAC 2311",
+      "title": "Analytic Geometry and Calculus 1",
+      "credits": 4,
+      "status": "completed",
+      "sourceType": "ap",
+      "termLabel": "Transfer credit",
+      "grade": "P",
+      "note": "AP Calculus AB applied as MAC 2311",
+      "requirementApplications": [
+        {
+          "requirementId": "critical-tracking",
+          "credits": 4
+        }
+      ]
+    },
+    {
+      "code": "COP 3503C",
+      "title": "Programming Fundamentals 2",
+      "credits": 4,
+      "status": "planned",
+      "sourceType": "uf",
+      "plannedSemesterId": "spring-2026",
+      "requirementApplications": [
+        {
+          "requirementId": "major-core",
+          "credits": 4
+        }
+      ]
+    }
+  ]
+}

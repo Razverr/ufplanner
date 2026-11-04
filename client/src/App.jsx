@@ -10,6 +10,7 @@ import {
 import { deriveRequirementCredits, nextSemester } from './utils/planner'
 import {
   fetchCoursesFromApi,
+  fetchDegreeAuditFromApi,
   fetchRequirementsFromApi,
   fetchSemestersFromApi,
 } from './services/api'
@@ -34,6 +35,10 @@ function App() {
     let isMounted = true
 
     async function loadBackendData() {
+      let auditCourseMap = new Map()
+      let auditCourseCodeMap = new Map()
+      let auditLoaded = false
+
       try {
         // Fetch verified degree requirements
         const reqData = await fetchRequirementsFromApi()
@@ -47,8 +52,54 @@ function App() {
             })
           }
         }
-      } catch (e) {
+      } catch {
         // Fallback already in state
+      }
+
+      try {
+        // Load the student's normalized degree audit, including AP/transfer credit.
+        const auditData = await fetchDegreeAuditFromApi('demo-student')
+        if (isMounted && auditData) {
+          auditLoaded = true
+          if (auditData.requirements?.length > 0) {
+            setBaseRequirements(auditData.requirements)
+          }
+          if (auditData.program) {
+            setProgramInfo({
+              name: auditData.program.name,
+              college: auditData.program.college,
+              catalogYear: auditData.program.catalog_year || '2026-2027',
+            })
+          }
+
+          auditCourseMap = new Map(
+            (auditData.courses || []).map((course) => [course.courseId, course]),
+          )
+          auditCourseCodeMap = new Map(
+            (auditData.courses || []).map((course) => [course.code, course]),
+          )
+          setCourseList((prevList) =>
+            prevList.map((course) => {
+              const auditCourse =
+                auditCourseMap.get(course.id) ||
+                auditCourseCodeMap.get(course.code)
+              return auditCourse
+                ? {
+                    ...course,
+                    academicStatus: auditCourse.academicStatus,
+                    plannedSemester: auditCourse.plannedSemester,
+                    requirementIds: auditCourse.requirementIds,
+                  }
+                : {
+                    ...course,
+                    academicStatus: 'not-planned',
+                    plannedSemester: null,
+                  }
+            }),
+          )
+        }
+      } catch {
+        // The local demo data remains usable when the server is offline.
       }
 
       try {
@@ -57,7 +108,7 @@ function App() {
         if (isMounted && semData?.semesters && semData.semesters.length > 0) {
           setSemesterList(semData.semesters)
         }
-      } catch (e) {
+      } catch {
         // Fallback already in state
       }
 
@@ -72,20 +123,37 @@ function App() {
               statusMap.set(c.id, {
                 academicStatus: c.academicStatus,
                 plannedSemester: c.plannedSemester,
+                requirementIds: c.requirementIds,
               })
             }
 
             return courseData.courses.map((apiCourse) => {
               const existing = statusMap.get(apiCourse.id)
+              const auditCourse =
+                auditCourseMap.get(apiCourse.id) ||
+                auditCourseCodeMap.get(apiCourse.code)
               return {
                 ...apiCourse,
-                academicStatus: existing ? existing.academicStatus : (apiCourse.academicStatus || 'not-planned'),
-                plannedSemester: existing ? existing.plannedSemester : (apiCourse.plannedSemester || null),
+                academicStatus:
+                  auditCourse?.academicStatus ||
+                  (auditLoaded ? 'not-planned' : existing?.academicStatus) ||
+                  apiCourse.academicStatus ||
+                  'not-planned',
+                plannedSemester:
+                  auditCourse?.plannedSemester ??
+                  (auditLoaded ? null : existing?.plannedSemester) ??
+                  apiCourse.plannedSemester ??
+                  null,
+                requirementIds:
+                  auditCourse?.requirementIds ||
+                  (auditLoaded ? apiCourse.requirementIds : existing?.requirementIds) ||
+                  apiCourse.requirementIds ||
+                  [],
               }
             })
           })
         }
-      } catch (e) {
+      } catch {
         // Fallback already in state
       }
     }
@@ -146,6 +214,7 @@ function App() {
           selectedRequirementId={selectedRequirementId}
           selectedSemesterId={selectedSemesterId}
           onSemesterChange={setSelectedSemesterId}
+          onRequirementChange={setSelectedRequirementId}
           courses={courseList}
           semesters={semesterList}
           onAddToPlan={moveCourse}

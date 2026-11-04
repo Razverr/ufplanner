@@ -34,6 +34,15 @@ export async function fetchRequirementsFromApi() {
   return await res.json();
 }
 
+export async function fetchDegreeAuditFromApi(studentId = 'demo-student') {
+  const safeStudentId = encodeURIComponent(studentId)
+  const res = await fetch(`${API_BASE}/degree-audit/${safeStudentId}`)
+  if (!res.ok) {
+    throw new Error(`Failed to load degree audit (HTTP ${res.status})`)
+  }
+  return await res.json()
+}
+
 export async function fetchMetaFromApi() {
   const res = await fetch(`${API_BASE}/meta`);
   if (!res.ok) {

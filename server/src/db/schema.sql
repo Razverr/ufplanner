@@ -85,9 +85,59 @@ CREATE TABLE IF NOT EXISTS import_logs (
   completed_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS student_profiles (
+  id VARCHAR(64) PRIMARY KEY,
+  display_name VARCHAR(128) NOT NULL,
+  program_id VARCHAR(64) NOT NULL REFERENCES degree_programs(id) ON DELETE RESTRICT,
+  catalog_year VARCHAR(16) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS student_course_records (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  student_id VARCHAR(64) NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  course_id VARCHAR(32) REFERENCES courses(id) ON DELETE SET NULL,
+  course_code VARCHAR(16) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  credits NUMERIC(3,1) NOT NULL CHECK (credits > 0 AND credits <= 20),
+  status VARCHAR(16) NOT NULL CHECK (status IN ('completed', 'in-progress', 'planned')),
+  source_type VARCHAR(32) NOT NULL CHECK (
+    source_type IN ('uf', 'ap', 'dual-enrollment', 'transfer', 'manual')
+  ),
+  term_label VARCHAR(64),
+  planned_semester_id VARCHAR(32) REFERENCES terms(id) ON DELETE SET NULL,
+  grade VARCHAR(8),
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (student_id, course_code)
+);
+
+CREATE TABLE IF NOT EXISTS student_course_requirement_applications (
+  student_course_id BIGINT NOT NULL REFERENCES student_course_records(id) ON DELETE CASCADE,
+  requirement_id VARCHAR(64) NOT NULL REFERENCES degree_requirements(id) ON DELETE CASCADE,
+  applied_credits NUMERIC(3,1) NOT NULL CHECK (applied_credits > 0 AND applied_credits <= 20),
+  PRIMARY KEY (student_course_id, requirement_id)
+);
+
+CREATE TABLE IF NOT EXISTS degree_audit_imports (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  student_id VARCHAR(64) NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  source VARCHAR(32) NOT NULL,
+  raw_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indices for rapid querying and filtering
 CREATE INDEX IF NOT EXISTS idx_courses_code ON courses(code);
 CREATE INDEX IF NOT EXISTS idx_offerings_course_term ON course_offerings(course_id, term_id);
 CREATE INDEX IF NOT EXISTS idx_offerings_term_id ON course_offerings(term_id);
 CREATE INDEX IF NOT EXISTS idx_req_mappings_req ON course_requirement_mappings(requirement_id);
 CREATE INDEX IF NOT EXISTS idx_req_mappings_course ON course_requirement_mappings(course_id);
+CREATE INDEX IF NOT EXISTS idx_student_courses_student ON student_course_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_courses_course ON student_course_records(course_id);
+CREATE INDEX IF NOT EXISTS idx_student_req_apps_requirement
+  ON student_course_requirement_applications(requirement_id);
+CREATE INDEX IF NOT EXISTS idx_degree_audit_imports_student
+  ON degree_audit_imports(student_id, imported_at DESC);
