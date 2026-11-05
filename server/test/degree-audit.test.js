@@ -6,6 +6,7 @@ import {
   validateAuditImport,
 } from '../src/services/degree-audit.js';
 import { DEMO_AUDIT_IMPORT } from '../src/data/demo-audit.js';
+import { findCourseCandidates } from '../src/services/degree-audit-pdf.js';
 
 const requirements = [
   {
@@ -149,4 +150,29 @@ test('caps planned credits at the remaining requirement amount', () => {
 
   assert.equal(response.requirements[0].completedCredits, 10);
   assert.equal(response.requirements[0].plannedCredits, 2);
+});
+
+test('finds completed and planned course candidates in degree-audit text', () => {
+  const candidates = findCourseCandidates(`
+    Fall 2025 COP 3502C Programming Fundamentals 1 A Completed
+    Spring 2026 COP 3503C Programming Fundamentals 2 IP In Progress
+    Still needed: choose from CAP 4630 or CAP 4641
+  `);
+
+  const completed = candidates.find((course) => course.code === 'COP 3502C');
+  const planned = candidates.find((course) => course.code === 'COP 3503C');
+  const unmet = candidates.find((course) => course.code === 'CAP 4630');
+
+  assert.deepEqual(
+    [completed.suggestedStatus, completed.selected],
+    ['completed', true],
+  );
+  assert.deepEqual(
+    [planned.suggestedStatus, planned.selected, planned.plannedSemesterId],
+    ['planned', true, 'spring-2026'],
+  );
+  assert.deepEqual(
+    [unmet.confidence, unmet.selected],
+    ['review', false],
+  );
 });

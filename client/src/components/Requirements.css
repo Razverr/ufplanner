@@ -32,6 +32,13 @@
   line-height: 1.2;
 }
 
+.requirements-heading-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 9px;
+}
+
 .credit-summary {
   color: var(--muted-text);
   font-size: 0.82rem;
@@ -307,6 +314,10 @@
   .requirement-card-heading {
     flex-direction: column;
     gap: 10px;
+  }
+
+  .requirements-heading-actions {
+    align-items: flex-start;
   }
 
   .credit-summary {

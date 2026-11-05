@@ -1,4 +1,5 @@
 import './Requirements.css'
+import DegreeAuditImport from './DegreeAuditImport'
 import {
   FaAdjust,
   FaBookOpen,
@@ -40,6 +41,7 @@ function Requirements({
   requirements,
   selectedRequirementId,
   onSelectRequirement,
+  onImportAudit,
 }) {
   const totals = requirements.reduce(
     (result, requirement) => ({
@@ -60,9 +62,12 @@ function Requirements({
           <p className="section-label">Degree audit</p>
           <h2 id="requirements-title">Requirements &amp; Progress</h2>
         </div>
-        <span className="credit-summary">
-          {totals.completed} of {totals.total} credits completed
-        </span>
+        <div className="requirements-heading-actions">
+          <span className="credit-summary">
+            {totals.completed} of {totals.total} credits completed
+          </span>
+          <DegreeAuditImport onImport={onImportAudit} />
+        </div>
       </div>
 
       <div
