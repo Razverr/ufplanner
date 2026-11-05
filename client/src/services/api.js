@@ -43,6 +43,42 @@ export async function fetchDegreeAuditFromApi(studentId = 'demo-student') {
   return await res.json()
 }
 
+export async function parseDegreeAuditPdfFromApi(file, studentId = 'demo-student') {
+  const safeStudentId = encodeURIComponent(studentId)
+  const formData = new FormData()
+  formData.append('auditPdf', file)
+
+  const res = await fetch(`${API_BASE}/degree-audit/${safeStudentId}/parse-pdf`, {
+    method: 'POST',
+    body: formData,
+  })
+  const response = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(response.error || `Failed to read degree-audit PDF (HTTP ${res.status})`)
+  }
+  return response
+}
+
+export async function importDegreeAuditFromApi(auditData) {
+  const studentId = auditData?.student?.id
+  if (!studentId) {
+    throw new Error('The degree-audit file is missing a student ID.')
+  }
+
+  const safeStudentId = encodeURIComponent(studentId)
+  const res = await fetch(`${API_BASE}/degree-audit/${safeStudentId}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(auditData),
+  })
+
+  const response = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(response.error || `Failed to import degree audit (HTTP ${res.status})`)
+  }
+  return response
+}
+
 export async function fetchMetaFromApi() {
   const res = await fetch(`${API_BASE}/meta`);
   if (!res.ok) {

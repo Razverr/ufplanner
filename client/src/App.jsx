@@ -13,8 +13,56 @@ import {
   fetchDegreeAuditFromApi,
   fetchRequirementsFromApi,
   fetchSemestersFromApi,
+  importDegreeAuditFromApi,
 } from './services/api'
 import './App.css'
+
+function getProgramInfo(program) {
+  return {
+    name: program.name,
+    college: program.college,
+    catalogYear: program.catalog_year || '2026-2027',
+  }
+}
+
+function mergeAuditCourses(catalogCourses, auditCourses = []) {
+  const auditById = new Map(auditCourses.map((course) => [course.courseId, course]))
+  const auditByCode = new Map(auditCourses.map((course) => [course.code, course]))
+  const mergedIds = new Set()
+
+  const mergedCatalog = catalogCourses.map((course) => {
+    const auditCourse = auditById.get(course.id) || auditByCode.get(course.code)
+    if (!auditCourse) {
+      return { ...course, academicStatus: 'not-planned', plannedSemester: null }
+    }
+
+    mergedIds.add(auditCourse.courseId)
+    return {
+      ...course,
+      academicStatus: auditCourse.academicStatus,
+      plannedSemester: auditCourse.plannedSemester,
+      requirementIds: auditCourse.requirementIds,
+    }
+  })
+
+  const auditOnlyCourses = auditCourses
+    .filter((course) => !mergedIds.has(course.courseId))
+    .map((course) => ({
+      id: course.courseId,
+      code: course.code,
+      title: course.title,
+      credits: course.credits,
+      description: 'Imported from the student degree audit.',
+      academicStatus: course.academicStatus,
+      plannedSemester: course.plannedSemester,
+      requirementIds: course.requirementIds,
+      prerequisites: [],
+      offeredSemesters: [],
+      sourceType: course.sourceType,
+    }))
+
+  return [...mergedCatalog, ...auditOnlyCourses]
+}
 
 function App() {
   const [selectedRequirementId, setSelectedRequirementId] = useState('computing-electives')
@@ -45,11 +93,7 @@ function App() {
         if (isMounted && reqData?.requirements) {
           setBaseRequirements(reqData.requirements)
           if (reqData.program) {
-            setProgramInfo({
-              name: reqData.program.name,
-              college: reqData.program.college,
-              catalogYear: reqData.program.catalog_year || '2026-2027',
-            })
+            setProgramInfo(getProgramInfo(reqData.program))
           }
         }
       } catch {
@@ -65,11 +109,7 @@ function App() {
             setBaseRequirements(auditData.requirements)
           }
           if (auditData.program) {
-            setProgramInfo({
-              name: auditData.program.name,
-              college: auditData.program.college,
-              catalogYear: auditData.program.catalog_year || '2026-2027',
-            })
+            setProgramInfo(getProgramInfo(auditData.program))
           }
 
           auditCourseMap = new Map(
@@ -193,6 +233,23 @@ function App() {
     })
   }
 
+  async function importDegreeAudit(auditData) {
+    const importedAudit = await importDegreeAuditFromApi(auditData)
+
+    setBaseRequirements(importedAudit.requirements)
+    setProgramInfo(getProgramInfo(importedAudit.program))
+    setCourseList((currentCourses) =>
+      mergeAuditCourses(currentCourses, importedAudit.courses),
+    )
+
+    const firstPlannedSemester = importedAudit.courses.find(
+      (course) => course.plannedSemester,
+    )?.plannedSemester
+    if (firstPlannedSemester) setSelectedSemesterId(firstPlannedSemester)
+
+    return importedAudit
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -208,6 +265,7 @@ function App() {
           requirements={requirements}
           selectedRequirementId={selectedRequirementId}
           onSelectRequirement={setSelectedRequirementId}
+          onImportAudit={importDegreeAudit}
         />
 
         <CourseSearch

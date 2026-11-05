@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { pool, isDbConnected } from '../db/pool.js';
 import { VERIFIED_PROGRAM, VERIFIED_REQUIREMENTS } from '../db/seed.js';
 import { DEMO_AUDIT_IMPORT, DEMO_STUDENT_ID } from '../data/demo-audit.js';
@@ -7,8 +8,23 @@ import {
   courseCodeToId,
   validateAuditImport,
 } from '../services/degree-audit.js';
+import { extractDegreeAuditPdf } from '../services/degree-audit-pdf.js';
 
 export const degreeAuditRouter = express.Router();
+const uploadAuditPdf = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+});
+
+function receiveAuditPdf(req, res, next) {
+  uploadAuditPdf.single('auditPdf')(req, res, (error) => {
+    if (!error) return next();
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'The degree-audit PDF must be smaller than 10 MB.' });
+    }
+    return res.status(400).json({ error: 'The degree-audit PDF could not be uploaded.' });
+  });
+}
 
 function authorizeAuditImport(req, res, next) {
   const configuredToken = process.env.AUDIT_IMPORT_TOKEN;
@@ -140,6 +156,69 @@ degreeAuditRouter.get('/:studentId', async (req, res) => {
   } catch (error) {
     console.error('Error loading degree audit:', error);
     return res.status(500).json({ error: 'Failed to load the degree audit.' });
+  }
+});
+
+degreeAuditRouter.post('/:studentId/parse-pdf', receiveAuditPdf, async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Choose a degree-audit PDF to continue.' });
+  }
+  try {
+    const extracted = await extractDegreeAuditPdf(req.file.buffer);
+    if (extracted.candidates.length === 0) {
+      return res.status(422).json({
+        error: 'No UF course codes were found in this PDF. Make sure it is a ONE.UF degree audit.',
+      });
+    }
+
+    const codes = extracted.candidates.map((candidate) => candidate.code);
+    const catalogResult = await pool.query(
+      `SELECT c.id, c.code, c.title, c.credits_min AS credits, crm.requirement_id
+         FROM courses c
+         LEFT JOIN course_requirement_mappings crm ON crm.course_id = c.id
+        WHERE c.code = ANY($1::text[])
+        ORDER BY c.code`,
+      [codes],
+    );
+    const catalogByCode = new Map();
+    for (const row of catalogResult.rows) {
+      if (!catalogByCode.has(row.code)) {
+        catalogByCode.set(row.code, {
+          id: row.id,
+          title: row.title,
+          credits: Number(row.credits),
+          requirementIds: [],
+        });
+      }
+      if (row.requirement_id) {
+        catalogByCode.get(row.code).requirementIds.push(row.requirement_id);
+      }
+    }
+
+    const candidates = extracted.candidates.map((candidate) => {
+      const catalogCourse = catalogByCode.get(candidate.code);
+      const credits = catalogCourse?.credits || 3;
+      return {
+        ...candidate,
+        title: catalogCourse?.title || 'Course title not found in catalog',
+        credits,
+        catalogMatch: Boolean(catalogCourse),
+        requirementApplications: (catalogCourse?.requirementIds || []).map(
+          (requirementId) => ({ requirementId, credits }),
+        ),
+      };
+    });
+
+    return res.json({
+      fileName: req.file.originalname,
+      pageCount: extracted.pageCount,
+      studentId: String(req.params.studentId || 'demo-student').toLowerCase(),
+      candidates,
+      selectedCount: candidates.filter((candidate) => candidate.selected).length,
+    });
+  } catch (error) {
+    console.error('Error parsing degree-audit PDF:', error);
+    return res.status(422).json({ error: error.message || 'The PDF could not be read.' });
   }
 });
 

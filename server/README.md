@@ -26,6 +26,12 @@ with a validated JSON import. A sample request body is available at
 `examples/demo-degree-audit.json`. In production, set `AUDIT_IMPORT_TOKEN` and
 send the same value in the `x-audit-import-token` header.
 
+For the classroom MVP, students use the **Import audit PDF** button in the web
+app. `POST /api/degree-audit/:studentId/parse-pdf` extracts course candidates
+from a PDF printed from ONE.UF. The student reviews those candidates before the
+client sends a normalized import and refreshes the requirements and semester
+plan from the response.
+
 This endpoint is deliberately an import boundary instead of claiming direct
 access to UF's protected student records. A future authenticated adapter can
 translate an approved UF export into the same JSON shape without changing the
