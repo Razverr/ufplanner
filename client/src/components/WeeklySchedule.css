@@ -1,0 +1,253 @@
+/* Zachary Allarey Code Section */
+/* weekly schedule styles, uses the shared colors from index.css */
+
+.schedule-panel {
+  margin-top: 24px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.schedule-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.schedule-heading h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.schedule-semester,
+.schedule-course select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.schedule-semester:focus-visible,
+.schedule-course select:focus-visible {
+  outline: 3px solid rgba(250, 70, 22, 0.3);
+  outline-offset: 2px;
+}
+
+.schedule-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 18px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted-text);
+  font-size: 0.88rem;
+}
+
+/* course list with section pickers */
+.schedule-courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-course {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-border);
+  border-radius: 11px;
+  background: #fbfcfe;
+}
+
+.schedule-course select,
+.schedule-course .schedule-muted {
+  grid-column: 1 / -1;
+}
+
+.schedule-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--block-border);
+}
+
+.schedule-course-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.schedule-course-title {
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-muted {
+  color: var(--muted-text);
+  font-size: 0.78rem;
+}
+
+/* conflict warnings */
+.schedule-conflicts {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff4ee;
+}
+
+.schedule-conflicts p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #8a361e;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+/* grid, scrolls sideways on small screens */
+.schedule-scroll {
+  overflow-x: auto;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 64px repeat(5, minmax(100px, 1fr));
+  grid-template-rows: 34px repeat(14, 40px);
+  min-width: 600px;
+  border: 1px solid var(--soft-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.schedule-corner,
+.schedule-day {
+  grid-row: 1;
+  background: #f6f8fc;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-day {
+  display: grid;
+  place-items: center;
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.schedule-period {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  grid-column: 1;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--soft-border);
+  background: #f6f8fc;
+  line-height: 1.1;
+}
+
+.schedule-period strong {
+  color: var(--navy);
+  font-size: 0.72rem;
+}
+
+.schedule-period span {
+  color: var(--muted-text);
+  font-size: 0.64rem;
+}
+
+.schedule-cell {
+  border-bottom: 1px solid var(--soft-border);
+  border-left: 1px solid var(--soft-border);
+}
+
+/* class blocks */
+.schedule-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 1;
+  margin: 2px;
+  padding: 4px 8px;
+  border-left: 4px solid var(--block-border);
+  border-radius: 7px;
+  background: var(--block-bg);
+  box-sizing: border-box;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.schedule-block strong {
+  color: var(--block-text);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.schedule-block span {
+  color: var(--block-text);
+  font-size: 0.64rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* conflicting blocks get a striped orange outline */
+.schedule-block.is-conflict {
+  outline: 2px solid var(--orange);
+  outline-offset: -2px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--block-bg),
+    var(--block-bg) 6px,
+    #ffe6da 6px,
+    #ffe6da 12px
+  );
+}
+
+/* course colors */
+.color-blue { --block-bg: #e6edff; --block-border: #0021a5; --block-text: #071b49; }
+.color-orange { --block-bg: #fff0e6; --block-border: #d84315; --block-text: #6e2209; }
+.color-teal { --block-bg: #e2f4f4; --block-border: #1f7a7a; --block-text: #0f3f3f; }
+.color-purple { --block-bg: #f0e9fb; --block-border: #6a3fb5; --block-text: #34195e; }
+.color-green { --block-bg: #e4f4ea; --block-border: #22824b; --block-text: #10402a; }
+.color-rose { --block-bg: #fbe8ee; --block-border: #b23a62; --block-text: #5a1530; }
+
+.schedule-note {
+  margin: 12px 0 0;
+  color: var(--muted-text);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 600px) {
+  .schedule-panel {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .schedule-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

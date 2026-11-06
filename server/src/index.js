@@ -8,6 +8,8 @@ import { requirementsRouter } from './routes/requirements.js';
 import { metaRouter } from './routes/meta.js';
 import { importRouter } from './routes/import.js';
 import { degreeAuditRouter } from './routes/degree-audit.js';
+// Zachary Allarey Code Section
+import { sectionsRouter } from './routes/sections.js';
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ app.use('/api/requirements', requirementsRouter);
 app.use('/api/meta', metaRouter);
 app.use('/api/import', importRouter);
 app.use('/api/degree-audit', degreeAuditRouter);
+// Zachary Allarey Code Section
+app.use('/api/sections', sectionsRouter);
 
 app.get('/api/health', async (req, res) => {
   const dbStatus = await testConnection();

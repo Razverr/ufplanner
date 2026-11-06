@@ -98,3 +98,16 @@ export async function evaluatePrerequisiteApi(payload) {
   }
   return await res.json();
 }
+
+
+// Zachary Allarey Code Section
+// gets a course's sections (with meeting times) for one semester
+export async function fetchCourseSectionsFromApi(courseId, termId) {
+  const res = await fetch(
+    `${API_BASE}/sections/${encodeURIComponent(courseId)}?term=${encodeURIComponent(termId)}`,
+  )
+  if (!res.ok) {
+    throw new Error(`Failed to load sections (HTTP ${res.status})`)
+  }
+  return await res.json()
+}
