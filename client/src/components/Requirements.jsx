@@ -110,6 +110,9 @@ function Requirements({
             0,
           )
           const isSelected = requirement.id === selectedRequirementId
+          const nextCourse = status.className === 'completed'
+            ? 'None'
+            : requirement.nextCourse
 
           return (
             <button
@@ -159,7 +162,7 @@ function Requirements({
 
               <span className="next-course">
                 <span>Next course</span>
-                <strong>{requirement.nextCourse}</strong>
+                <strong>{nextCourse}</strong>
               </span>
 
               <span className="course-link">

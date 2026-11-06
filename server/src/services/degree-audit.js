@@ -195,6 +195,7 @@ export function buildAuditResponse({
       totals.planned,
       Math.max(totalCredits - completedCredits, 0),
     );
+    const isCompleted = completedCredits >= totalCredits;
 
     return {
       id: requirement.id,
@@ -204,10 +205,11 @@ export function buildAuditResponse({
       completedCredits,
       plannedCredits,
       creditNotes: [...new Set(notesByRequirement.get(requirement.id) || [])],
-      nextCourse:
-        requirement.nextCourse ||
-        requirement.next_course_suggestion ||
-        'Review matching courses',
+      nextCourse: isCompleted
+        ? 'None'
+        : requirement.nextCourse ||
+          requirement.next_course_suggestion ||
+          'Review matching courses',
     };
   });
 
