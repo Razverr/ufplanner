@@ -113,12 +113,35 @@ test('calculates completed and planned requirement progress', () => {
     [4, 8],
   );
   assert.equal(generalEducation.completedCredits, 6);
+  assert.equal(generalEducation.nextCourse, 'None');
   assert.match(critical.creditNotes[0], /AP Calculus AB/);
   assert.equal(
     response.courses.find((course) => course.code === 'CDA 3101')
       .plannedSemester,
     'fall-2026',
   );
+});
+
+test('hides the next-course suggestion when a requirement is completed', () => {
+  const response = buildAuditResponse({
+    student: { id: 'test-student', displayName: 'Test Student' },
+    program: { id: 'cs-bs-eng', name: 'Computer Science, B.S.' },
+    requirements: [requirements[0]],
+    courses: [
+      {
+        code: 'MAC 2311',
+        credits: 12,
+        status: 'completed',
+        sourceType: 'uf',
+        requirementApplications: [
+          { requirementId: 'critical-tracking', credits: 12 },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(response.requirements[0].completedCredits, 12);
+  assert.equal(response.requirements[0].nextCourse, 'None');
 });
 
 test('caps planned credits at the remaining requirement amount', () => {
