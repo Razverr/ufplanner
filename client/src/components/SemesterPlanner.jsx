@@ -151,7 +151,7 @@ function SemesterPlanner({
                 <ul className="planner-courses">
                   {semesterCourses.map((course) => {
                     const missing = issues[course.id]
-                    const offering = course.offerings[semester.id] ?? 'unknown'
+                    const offering = course.offerings?.[semester.id] ?? 'unknown'
 
                     return (
                       <li

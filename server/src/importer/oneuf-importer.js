@@ -328,12 +328,23 @@ async function processCoursePage(client, rawCourses, termCode, termId, seenCours
     seenCourses.set(courseId, true);
 
     const sectionCount = rawCourse.sections ? rawCourse.sections.length : 0;
-    const sectionsSummary = (rawCourse.sections || []).map(s => ({
+        const sectionsSummary = (rawCourse.sections || []).map(s => ({
       classNumber: s.classNumber,
       sectionNumber: s.number,
       instructors: (s.instructors || []).map(i => i.name).filter(Boolean),
       credits: s.credits,
-      openSeats: s.openSeats
+      openSeats: s.openSeats,
+      // Zachary Allarey Code Section
+      // keep meeting days/times for the weekly schedule
+      meetTimes: (s.meetTimes || []).map(m => ({
+        days: m.meetDays || [],
+        periodBegin: m.meetPeriodBegin ?? null,
+        periodEnd: m.meetPeriodEnd ?? null,
+        timeBegin: m.meetTimeBegin ?? null,
+        timeEnd: m.meetTimeEnd ?? null,
+        building: m.meetBuilding || m.meetBldgCode || null,
+        room: m.meetRoom || null
+      }))
     }));
 
     offeringsToUpsert.push({

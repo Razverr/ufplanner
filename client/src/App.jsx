@@ -16,6 +16,8 @@ import {
   importDegreeAuditFromApi,
 } from './services/api'
 import './App.css'
+// Zachary Allarey Code Section
+import WeeklySchedule from './components/WeeklySchedule'
 
 function getProgramInfo(program) {
   return {
@@ -286,6 +288,14 @@ function App() {
           onAddSemester={addSemester}
         />
       </div>
+      
+      {/* Zachary Allarey Code Section */}
+      {/* weekly schedule, full width under the three panels */}
+      <WeeklySchedule
+        courses={courseList}
+        semesters={semesterList}
+        initialSemesterId={selectedSemesterId}
+      />
     </main>
   )
 }
